@@ -8,7 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-type Projectile struct {
+type BasicParticle struct {
 	positionPx Vector
 	velocityPx Vector
 	charge     float64
@@ -19,27 +19,30 @@ type Projectile struct {
 const (
 	initialVelocity       = 180.0
 	electrostaticConstant = 100 // really 8.98e9
-	minDistance           = 1.0
+	softening             = 1.0
 	maxDistance           = 500.0
 	maxVelocity           = 250.0
 )
 
-func NewProjectile(posPx Vector, rotationRad float64) *Projectile {
-	return &Projectile{
+func NewBasicParticle(posPx Vector, rotationRad float64) *BasicParticle {
+	return &BasicParticle{
 		positionPx: posPx,
 		velocityPx: Vector{
-			X: initialVelocity * math.Sin(rotationRad),
-			Y: initialVelocity * -math.Cos(rotationRad),
+			X: initialVelocity * math.Cos(rotationRad),
+			Y: initialVelocity * math.Sin(rotationRad),
 		},
 		charge:   -10,
 		radiusPx: 2,
-		color:    color.RGBA{R: 255, G: 255, B: 100, A: 255},
+		color:    color.RGBA{R: 100, G: 100, B: 255, A: 255},
 	}
 }
 
-func (p *Projectile) Update(objects []ChargedObject) bool {
+func (p *BasicParticle) Update(objects []ChargedObject) bool {
 	// this could definitely be better
 	collision := false
+
+	accelerationX := 0.0
+	accelerationY := 0.0
 
 	for _, object := range objects {
 		// check for collision and don't update if one occurs
@@ -53,27 +56,37 @@ func (p *Projectile) Update(objects []ChargedObject) bool {
 		if object.charge == 0 {
 			continue
 		}
+
+		// get diff in distance, and applying softening to avoid out of control forces
 		dx := object.positionPx.X - p.positionPx.X
 		dy := object.positionPx.Y - p.positionPx.Y
-		distanceSq := dx*dx + dy*dy
-		if minDistance*minDistance < distanceSq && distanceSq < maxDistance*maxDistance {
+		distanceSq := dx*dx + dy*dy + softening*softening
+		if distanceSq < maxDistance*maxDistance {
 			distance := math.Sqrt(distanceSq)
-			force := math.Abs(electrostaticConstant * p.charge * object.charge / distanceSq)
-			if !object.isAttract {
+
+			force := electrostaticConstant * math.Abs(p.charge*object.charge) / distanceSq
+
+			// if charges are the same, force should repel
+			if p.charge*object.charge > 0 {
 				force *= -1
 			}
-			p.velocityPx.X += force * dx / distance / float64(ebiten.TPS())
-			p.velocityPx.Y += force * dy / distance / float64(ebiten.TPS())
+
+			// update acceleration, to be applied after all objects evaluated
+			accelerationX += force * dx / distance
+			accelerationY += force * dy / distance
 			//log.Print("distanceSq: ", distanceSq, "force: ", force, " distance: ", distance, " dx: ", dx, " dy: ", dy)
 		}
 	}
 
+	// update velocity, then position
+	p.velocityPx.X += accelerationX / float64(ebiten.TPS())
+	p.velocityPx.Y += accelerationY / float64(ebiten.TPS())
 	p.positionPx.X += p.velocityPx.X / float64(ebiten.TPS())
 	p.positionPx.Y += p.velocityPx.Y / float64(ebiten.TPS())
 
 	return collision
 }
 
-func (p *Projectile) Draw(screen *ebiten.Image) {
+func (p *BasicParticle) Draw(screen *ebiten.Image) {
 	vector.FillCircle(screen, float32(p.positionPx.X), float32(p.positionPx.Y), float32(p.radiusPx), p.color, false)
 }

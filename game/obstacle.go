@@ -12,7 +12,6 @@ type ChargedObject struct {
 	radius     float64
 	color      color.RGBA
 	charge     float64
-	isAttract  bool
 }
 
 func NewChargedObject(x, y float64) *ChargedObject {
@@ -21,7 +20,6 @@ func NewChargedObject(x, y float64) *ChargedObject {
 		radius:     12,
 		color:      color.RGBA{R: 255, G: 100, B: 100, A: 255},
 		charge:     100,
-		isAttract:  true,
 	}
 }
 
@@ -29,7 +27,7 @@ func (o *ChargedObject) Update() error {
 	return nil
 }
 
-func (o *ChargedObject) IntersectsProjectile(projectile *Projectile) bool {
+func (o *ChargedObject) IntersectsProjectile(projectile *BasicParticle) bool {
 	if projectile == nil {
 		return false
 	}

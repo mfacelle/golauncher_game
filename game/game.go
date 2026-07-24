@@ -12,14 +12,14 @@ import (
 )
 
 const (
-	screenWidth  = 320
-	screenHeight = 240
+	screenWidth  = 600
+	screenHeight = 480
 )
 
 type Game struct {
-	player     *Player
-	objects    []ChargedObject
-	projectile []*Projectile
+	player    *Player
+	objects   []ChargedObject
+	particles []*BasicParticle
 }
 
 // need to eventually udpate this to either handle multiple types of objects,
@@ -29,7 +29,6 @@ type objectJSON struct {
 	Radius     float64    `json:"radius"`
 	Color      color.RGBA `json:"color"`
 	Charge     float64    `json:"charge"`
-	IsAttract  bool       `json:"isAttract"`
 }
 
 func NewGame() *Game {
@@ -65,7 +64,6 @@ func loadObjects(path string) []ChargedObject {
 			radius:     data.Radius,
 			color:      data.Color,
 			charge:     data.Charge,
-			isAttract:  data.IsAttract,
 		})
 	}
 
@@ -75,12 +73,11 @@ func loadObjects(path string) []ChargedObject {
 func (game *Game) Update() error {
 	// should eventually make this some kind of state machine (main menu, load screen, actual game, etc)
 
-	// fire projectile if space is pressed
-	// could do this better probably
-	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+	// fire projectile when the left mouse button is pressed
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		playerCenter := game.player.Center()
-		projectile := NewProjectile(playerCenter, game.player.rotationRad)
-		game.projectile = append(game.projectile, projectile)
+		projectile := NewBasicParticle(playerCenter, game.player.rotationRad)
+		game.particles = append(game.particles, projectile)
 	}
 
 	// upate game objects
@@ -92,8 +89,8 @@ func (game *Game) Update() error {
 	}
 
 	// update projectiles
-	remainingProjectiles := make([]*Projectile, 0, len(game.projectile))
-	for _, projectile := range game.projectile {
+	remainingProjectiles := make([]*BasicParticle, 0, len(game.particles))
+	for _, projectile := range game.particles {
 		collision := projectile.Update(game.objects)
 		// only keep projectiles that have not collided with objects and are within the screen bounds
 		if !collision && isWithinScreenBounds(projectile.positionPx) {
@@ -101,7 +98,7 @@ func (game *Game) Update() error {
 		}
 		// may want some kind of special "destroy" function for projectiles that encounter collision?
 	}
-	game.projectile = remainingProjectiles
+	game.particles = remainingProjectiles
 
 	return nil
 }
@@ -112,13 +109,13 @@ func isWithinScreenBounds(position Vector) bool {
 
 func (game *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x10, 0x10, 0x20, 0xff})
-	ebitenutil.DebugPrint(screen, "hello world")
+	ebitenutil.DebugPrint(screen, "WASD: move, mouse: aim, left click: fire")
 
 	game.player.Draw(screen)
 	for _, object := range game.objects {
 		object.Draw(screen)
 	}
-	for _, projectile := range game.projectile {
+	for _, projectile := range game.particles {
 		projectile.Draw(screen)
 	}
 }

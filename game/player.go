@@ -8,14 +8,17 @@ import (
 )
 
 const (
+	// eventually, starting position will be defined per level
 	defaultX           = 100
 	defaultY           = 200
 	rotationRadsPerSec = math.Pi
-	movementPxPerSec   = 50
+	movementPxPerSec   = 75
+	movementAccelPx    = 2
 )
 
 type Player struct {
 	positionPx  Vector
+	velocityPx  Vector
 	rotationRad float64
 	sprite      *ebiten.Image
 }
@@ -29,33 +32,82 @@ func NewPlayer() *Player {
 }
 
 func (p *Player) Update() error {
-	// temp value for now (eventually make pixels per second and split rotation)
-	moveSpeedPx := movementPxPerSec / float64(ebiten.TPS())
-	rotationRads := rotationRadsPerSec / float64(ebiten.TPS())
+	// apply acceleration in position and rotation when moving
+	dt := 1.0 / float64(ebiten.TPS())
+	maxMoveSpeedPx := movementPxPerSec * dt
+	moveAccelPx := movementAccelPx * dt
 
-	// handle movement with WASD
+	// apply position acceleration
+	moveX := 0.0
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
-		p.positionPx.X -= moveSpeedPx
+		moveX -= 1
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		p.positionPx.X += moveSpeedPx
+		moveX += 1
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		p.positionPx.Y -= moveSpeedPx
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyS) {
-		p.positionPx.Y += moveSpeedPx
+	if moveX != 0 {
+		p.velocityPx.X += moveX * moveAccelPx
+		if p.velocityPx.X > maxMoveSpeedPx {
+			p.velocityPx.X = maxMoveSpeedPx
+		} else if p.velocityPx.X < -maxMoveSpeedPx {
+			p.velocityPx.X = -maxMoveSpeedPx
+		}
+	} else {
+		p.velocityPx.X = approachZero(p.velocityPx.X, moveAccelPx)
 	}
 
-	// handle rotation with arrows keys (left/right only)
-	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		p.rotationRad -= rotationRads
+	moveY := 0.0
+	if ebiten.IsKeyPressed(ebiten.KeyW) {
+		moveY -= 1
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		p.rotationRad += rotationRads
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		moveY += 1
+	}
+	if moveY != 0 {
+		p.velocityPx.Y += moveY * moveAccelPx
+		if p.velocityPx.Y > maxMoveSpeedPx {
+			p.velocityPx.Y = maxMoveSpeedPx
+		} else if p.velocityPx.Y < -maxMoveSpeedPx {
+			p.velocityPx.Y = -maxMoveSpeedPx
+		}
+	} else {
+		p.velocityPx.Y = approachZero(p.velocityPx.Y, moveAccelPx)
+	}
+
+	// update position
+	p.positionPx.X += p.velocityPx.X
+	p.positionPx.Y += p.velocityPx.Y
+
+	// point toward the mouse position
+	// eventually, would be nice to accelerate towards this position,
+	// but need a good way to prevent wobble when overshooting angle
+	mouseX, mouseY := ebiten.CursorPosition()
+	playerCenter := p.Center()
+	dx := float64(mouseX) - playerCenter.X
+	dy := float64(mouseY) - playerCenter.Y
+	if dx != 0 || dy != 0 {
+		p.rotationRad = math.Atan2(dy, dx)
 	}
 
 	return nil
+}
+
+// let value approach 0 from negative or positive direction, using provided step
+func approachZero(value, step float64) float64 {
+	switch {
+	case value > 0:
+		if value > step {
+			return value - step
+		}
+		return 0
+	case value < 0:
+		if value < -step {
+			return value + step
+		}
+		return 0
+	default:
+		return 0
+	}
 }
 
 func (p *Player) Center() Vector {

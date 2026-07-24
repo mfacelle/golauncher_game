@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# executable binary and other files
+golauncher_game
+.DS_Store
+
 # Test binary, built with `go test -c`
 *.test
 
