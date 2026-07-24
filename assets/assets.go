@@ -12,6 +12,8 @@ import (
 var assets embed.FS
 
 var PlayerSprite = mustLoadImage("player.png")
+
+// not really using ProjectileSprite yet
 var ProjectileSprit = mustLoadImage("projectile.png")
 
 // load an image, or error if unavailable

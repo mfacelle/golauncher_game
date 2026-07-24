@@ -1,26 +1,30 @@
 [
   {
+    "type": "charged",
     "positionPx": {"X": 150, "Y": 80},
     "radius": 20,
     "color": {"R": 255, "G": 100, "B": 100, "A": 255},
     "charge": 300
   },
   {
+    "type": "charged",
     "positionPx": {"X": 300, "Y": 140},
     "radius": 20,
     "color": {"R": 100, "G": 100, "B": 255, "A": 255},
     "charge": -500
   },
   {
+    "type": "charged",
     "positionPx": {"X": 400, "Y": 200},
     "radius": 20,
     "color": {"R": 100, "G": 100, "B": 255, "A": 255},
     "charge": -500
   },
   {
-    "positionPx": {"X": 80, "Y": 140},
-    "radius": 20,
-    "color": {"R": 255, "G": 255, "B": 255, "A": 255},
-    "charge": 0
+    "type": "obstacle",
+    "positionPx": {"X": 120, "Y": 300},
+    "widthPx": 120,
+    "heightPx": 40,
+    "color": {"R": 200, "G": 200, "B": 200, "A": 255}
   }
 ]

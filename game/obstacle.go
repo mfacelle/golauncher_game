@@ -1,0 +1,46 @@
+package game
+
+import (
+	"image/color"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+)
+
+// obstacle is similar to ChargedObject, but is rectangular and has no charge.
+// considering adding a charge to some eventually, but would need to figure out how to best calculate
+// attraction/repulsion forces
+type Obstacle struct {
+	positionPx Vector
+	widthPx    float64
+	heightPx   float64
+	color      color.RGBA
+}
+
+func NewObstacle(x, y float64) *Obstacle {
+	return &Obstacle{
+		positionPx: Vector{X: x, Y: y},
+		widthPx:    40,
+		heightPx:   20,
+		color:      color.RGBA{R: 120, G: 120, B: 120, A: 255},
+	}
+}
+
+func (o *Obstacle) Update() error {
+	return nil
+}
+
+func (o *Obstacle) IntersectsProjectile(projectile *BasicParticle) bool {
+	if projectile == nil {
+		return false
+	}
+
+	return projectile.positionPx.X >= o.positionPx.X &&
+		projectile.positionPx.X <= o.positionPx.X+o.widthPx &&
+		projectile.positionPx.Y >= o.positionPx.Y &&
+		projectile.positionPx.Y <= o.positionPx.Y+o.heightPx
+}
+
+func (o *Obstacle) Draw(screen *ebiten.Image) {
+	vector.FillRect(screen, float32(o.positionPx.X), float32(o.positionPx.Y), float32(o.widthPx), float32(o.heightPx), o.color, true)
+}

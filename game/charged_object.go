@@ -14,15 +14,6 @@ type ChargedObject struct {
 	charge     float64
 }
 
-func NewChargedObject(x, y float64) *ChargedObject {
-	return &ChargedObject{
-		positionPx: Vector{X: x, Y: y},
-		radius:     12,
-		color:      color.RGBA{R: 255, G: 100, B: 100, A: 255},
-		charge:     100,
-	}
-}
-
 func (o *ChargedObject) Update() error {
 	return nil
 }
