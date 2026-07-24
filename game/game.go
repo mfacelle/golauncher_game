@@ -21,6 +21,7 @@ type Game struct {
 	player    *Player
 	objects   []ChargedObject
 	obstacles []Obstacle
+	playZone  *PlayerZone
 	particles []*BasicParticle
 }
 
@@ -47,6 +48,8 @@ func NewGame() *Game {
 	// look into constructing this stuff better
 	game.player = NewPlayer()
 	game.objects, game.obstacles = loadLevelObjects("objects.json")
+	// load this from json eventually
+	game.playZone = NewPlayerZone(200, 100, 300, 200)
 
 	return game
 }
@@ -103,6 +106,9 @@ func (game *Game) Update() error {
 
 	// update objects
 	game.player.Update()
+	if game.playZone != nil {
+		game.playZone.Clamp(game.player)
+	}
 	for _, object := range game.objects {
 		object.Update()
 	}
@@ -142,11 +148,15 @@ func isWithinScreenBounds(position Vector) bool {
 }
 
 // move to a specific "level" class.  top-level "game" update should be a state machine to display
-// different screens (i.e. pause, main menu, level, etc)func (game *Game) Draw(screen *ebiten.Image) {
+// different screens (i.e. pause, main menu, level, etc)
+func (game *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x10, 0x10, 0x20, 0xff})
 	ebitenutil.DebugPrint(screen, "WASD: move, mouse: aim, left click: fire")
 
 	game.player.Draw(screen)
+	if game.playZone != nil {
+		game.playZone.Draw(screen)
+	}
 	for _, object := range game.objects {
 		object.Draw(screen)
 	}
