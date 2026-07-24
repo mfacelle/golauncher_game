@@ -1,0 +1,23 @@
+[
+  {
+    "positionPx": {"X": 150, "Y": 80},
+    "radius": 12,
+    "color": {"R": 255, "G": 100, "B": 100, "A": 255},
+    "charge": 200,
+    "isAttract": true
+  },
+  {
+    "positionPx": {"X": 220, "Y": 140},
+    "radius": 12,
+    "color": {"R": 100, "G": 100, "B": 255, "A": 255},
+    "charge": 500,
+    "isAttract": false
+  },
+  {
+    "positionPx": {"X": 80, "Y": 140},
+    "radius": 12,
+    "color": {"R": 255, "G": 255, "B": 255, "A": 255},
+    "charge": 0,
+    "isAttract": false
+  }
+]
