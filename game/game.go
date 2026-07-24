@@ -16,6 +16,7 @@ const (
 	screenHeight = 480
 )
 
+// need to include state machine stuff and different game states
 type Game struct {
 	player    *Player
 	objects   []ChargedObject
@@ -23,6 +24,7 @@ type Game struct {
 	particles []*BasicParticle
 }
 
+// move to a sepatate "level loader" class
 // need to eventually udpate this to either handle multiple types of objects,
 // or split into multiple json types
 type objectJSON struct {
@@ -35,6 +37,8 @@ type objectJSON struct {
 	Charge     float64    `json:"charge"`
 }
 
+// keep at top-level "game" class
+// but update to initialize state machine and different objects
 func NewGame() *Game {
 	log.Println("new game")
 
@@ -47,7 +51,7 @@ func NewGame() *Game {
 	return game
 }
 
-// want this to load all types of objects defining a level, not just ChargedObject.
+// move to a sepatate "level loader" class
 func loadLevelObjects(path string) ([]ChargedObject, []Obstacle) {
 	file, err := os.ReadFile(path)
 	if err != nil {
@@ -85,9 +89,9 @@ func loadLevelObjects(path string) ([]ChargedObject, []Obstacle) {
 	return objects, obstacles
 }
 
+// move to a specific "level" class.  top-level "game" update should be a state machine to display
+// different screens (i.e. pause, main menu, level, etc)
 func (game *Game) Update() error {
-	// should eventually make this some kind of state machine (main menu, load screen, actual game, etc)
-	// or, really, this class is mostly a "level" and not an overall "game"
 
 	// fire projectile when the left mouse button is pressed
 	// eventually look into how this is allocated.  pointer vs array (heap/stack?)
@@ -132,11 +136,13 @@ func (game *Game) Update() error {
 	return nil
 }
 
+// keep at top-level "game" class
 func isWithinScreenBounds(position Vector) bool {
 	return position.X >= -50 && position.X <= screenWidth+50 && position.Y >= -50 && position.Y <= screenHeight+50
 }
 
-func (game *Game) Draw(screen *ebiten.Image) {
+// move to a specific "level" class.  top-level "game" update should be a state machine to display
+// different screens (i.e. pause, main menu, level, etc)func (game *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x10, 0x10, 0x20, 0xff})
 	ebitenutil.DebugPrint(screen, "WASD: move, mouse: aim, left click: fire")
 
@@ -152,6 +158,7 @@ func (game *Game) Draw(screen *ebiten.Image) {
 	}
 }
 
+// keep at top-level "game" class
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return outsideWidth, outsideHeight
 }
