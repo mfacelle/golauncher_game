@@ -20,8 +20,7 @@ const (
 	initialVelocity       = 180.0
 	electrostaticConstant = 100 // really 8.98e9
 	softening             = 1.0
-	maxDistance           = 500.0
-	maxVelocity           = 250.0
+	maxDistance           = 800.0
 )
 
 func NewBasicParticle(posPx Vector, rotationRad float64) *BasicParticle {

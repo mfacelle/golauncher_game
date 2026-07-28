@@ -13,7 +13,7 @@ type PlayerZone struct {
 	heightPx      float64
 	color         color.RGBA
 	borderColor   color.RGBA
-	borderWidthPx float32
+	borderWidthPx float64
 }
 
 func NewPlayerZone(x, y, width, height float64) *PlayerZone {
@@ -62,5 +62,5 @@ func (z *PlayerZone) Clamp(player *Player) {
 
 func (z *PlayerZone) Draw(screen *ebiten.Image) {
 	vector.FillRect(screen, float32(z.positionPx.X), float32(z.positionPx.Y), float32(z.widthPx), float32(z.heightPx), z.color, true)
-	vector.StrokeRect(screen, float32(z.positionPx.X), float32(z.positionPx.Y), float32(z.widthPx), float32(z.heightPx), z.borderWidthPx, z.borderColor, true)
+	vector.StrokeRect(screen, float32(z.positionPx.X), float32(z.positionPx.Y), float32(z.widthPx), float32(z.heightPx), float32(z.borderWidthPx), z.borderColor, true)
 }

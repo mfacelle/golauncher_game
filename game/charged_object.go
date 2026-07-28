@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+// represents an object that has a charge that can attract/repel particles launched by the player.
 type ChargedObject struct {
 	positionPx Vector
 	radius     float64

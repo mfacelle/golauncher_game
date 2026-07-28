@@ -1,20 +1,24 @@
 package assets
 
 import (
+	"bytes"
 	"embed"
 	"image"
 	_ "image/png"
+	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 //go:embed *.png
 var assets embed.FS
 
-var PlayerSprite = mustLoadImage("player.png")
+//go:embed font.ttf
+var fontData []byte
 
-// not really using ProjectileSprite yet
-var ProjectileSprit = mustLoadImage("projectile.png")
+var PlayerSprite = mustLoadImage("player.png")
+var MainFont = mustLoadFont("font.ttf")
 
 // load an image, or error if unavailable
 func mustLoadImage(name string) *ebiten.Image {
@@ -30,4 +34,14 @@ func mustLoadImage(name string) *ebiten.Image {
 	}
 
 	return ebiten.NewImageFromImage(img)
+}
+
+func mustLoadFont(name string) *text.GoTextFaceSource {
+	fontSource, err := text.NewGoTextFaceSource(bytes.NewReader(fontData))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create a usable text.Face with a specific size
+	return fontSource
 }

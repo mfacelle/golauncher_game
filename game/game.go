@@ -1,7 +1,7 @@
 package game
 
 import (
-	"encoding/json"
+	"fmt"
 	"image/color"
 	"log"
 	"os"
@@ -9,171 +9,241 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"golauncher_game/assets"
 )
 
 const (
-	screenWidth  = 600
-	screenHeight = 480
+	WindowWidth  = 800
+	WindowHeight = 800
 )
 
-// need to include state machine stuff and different game states
+type gameState int
+
+const (
+	stateMainMenu gameState = iota
+	statePlaying
+	statePaused
+)
+
+// get gameState string, for debugging
+func (gs gameState) String() string {
+	// Boundary check to prevent panic
+	if gs < stateMainMenu || gs > statePaused {
+		return fmt.Sprintf("Invalid(%d)", gs)
+	}
+
+	// Fast lookup using an array
+	return [...]string{"MainMenu", "Playing", "Paused"}[gs]
+}
+
+// top-level game class, managing all states of the game (menus and levels)
 type Game struct {
-	// investigate using arrays of objects, not pointers
-	player    *Player
-	objects   []ChargedObject
-	obstacles []Obstacle
-	playZone  *PlayerZone
-	particles []*BasicParticle
+	currentState      gameState
+	currentLevel      *Level
+	currentLevelValue int
+	menuText          string
+	state             gameState
 }
 
-// move to a sepatate "level loader" class
-// need to eventually udpate this to either handle multiple types of objects,
-// or split into multiple json types
-type objectJSON struct {
-	Type       string     `json:"type"`
-	PositionPx Vector     `json:"positionPx"`
-	Radius     float64    `json:"radius"`
-	WidthPx    float64    `json:"widthPx"`
-	HeightPx   float64    `json:"heightPx"`
-	Color      color.RGBA `json:"color"`
-	Charge     float64    `json:"charge"`
-}
-
-// keep at top-level "game" class
-// but update to initialize state machine and different objects
+// create a new game object
 func NewGame() *Game {
 	log.Println("new game")
 
-	game := &Game{}
+	g := &Game{}
+	g.currentState = stateMainMenu
+	// start at level 1.  eventually, add some kind of level select menu
+	g.currentLevelValue = 0
+	g.menuText = "Press Enter to start"
+	g.currentState = stateMainMenu
 
-	// look into constructing this stuff better
-	game.player = NewPlayer()
-	game.objects, game.obstacles = loadLevelObjects("objects.json")
-	// load this from json eventually
-	game.playZone = NewPlayerZone(200, 100, 300, 200)
-
-	return game
+	return g
 }
 
-// move to a sepatate "level loader" class
-func loadLevelObjects(path string) ([]ChargedObject, []Obstacle) {
-	file, err := os.ReadFile(path)
-	if err != nil {
-		log.Printf("failed to read objects file: %v", err)
-		return nil, nil
+func (g *Game) loadNextLevel() *Level {
+	// check for the "debug" level.  if found, always load that one
+	_, err := os.Stat("levels/level0.json")
+	if err == nil {
+		g.currentLevelValue = 0
+	} else {
+		g.currentLevelValue++
 	}
 
-	var objectData []objectJSON
-	if err := json.Unmarshal(file, &objectData); err != nil {
-		log.Printf("failed to parse objects file: %v", err)
-		return nil, nil
-	}
+	levelFileName := fmt.Sprintf("levels/level%d.json", g.currentLevelValue)
+	log.Printf("Loading %s\n", levelFileName)
+	return loadLevelFromJSON(levelFileName)
+}
 
-	objects := make([]ChargedObject, 0, len(objectData))
-	obstacles := make([]Obstacle, 0, len(objectData))
-	for _, data := range objectData {
-		switch data.Type {
-		case "obstacle":
-			obstacles = append(obstacles, Obstacle{
-				positionPx: data.PositionPx,
-				widthPx:    data.WidthPx,
-				heightPx:   data.HeightPx,
-				color:      data.Color,
-			})
-		default:
-			objects = append(objects, ChargedObject{
-				positionPx: data.PositionPx,
-				radius:     data.Radius,
-				color:      data.Color,
-				charge:     data.Charge,
-			})
+func (g *Game) start() {
+	log.Println("starting game")
+	g.currentState = statePlaying
+	g.currentLevel = g.loadNextLevel()
+}
+
+func (g *Game) mainMenu() {
+	log.Println("back to main menu")
+	g.currentState = stateMainMenu
+	g.currentLevelValue = 0
+}
+
+func (g *Game) pause() {
+	if g.currentState == statePlaying {
+		g.currentState = statePaused
+	}
+}
+
+func (g *Game) resume() {
+	if g.currentState == statePaused {
+		g.currentState = statePlaying
+	}
+}
+
+// eventually break up main menu and pause menu into separate classes
+func (g *Game) Update() error {
+	// this should probably be broken up into calling Update on each object, based on state.
+	// for now, this works, though
+	switch g.currentState {
+	case stateMainMenu:
+		// start the level if player presses start button
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+			g.start()
 		}
-	}
+	case statePlaying:
+		// pause the level if player presses pause, otherwise, run the level
+		if g.currentLevel == nil {
+			log.Println("Current level is nil.  Returning to main menu")
+			g.mainMenu()
+		} else if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			g.pause()
+		} else {
+			err := g.currentLevel.Update()
+			if err != nil {
+				return err
+			}
 
-	return objects, obstacles
-}
-
-// move to a specific "level" class.  top-level "game" update should be a state machine to display
-// different screens (i.e. pause, main menu, level, etc)
-func (game *Game) Update() error {
-
-	// fire projectile when the left mouse button is pressed
-	// eventually look into how this is allocated.  pointer vs array (heap/stack?)
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		playerCenter := game.player.Center()
-		projectile := NewBasicParticle(playerCenter, game.player.rotationRad)
-		game.particles = append(game.particles, projectile)
-	}
-
-	// update objects
-	game.player.Update()
-	if game.playZone != nil {
-		game.playZone.Clamp(game.player)
-	}
-	for _, object := range game.objects {
-		object.Update()
-	}
-	for _, obstacle := range game.obstacles {
-		obstacle.Update()
-	}
-
-	// update projectiles, and remove any that have a collision or leave the screen
-	remainingProjectiles := make([]*BasicParticle, 0, len(game.particles))
-	for _, projectile := range game.particles {
-		// update projectile against all charged objects
-		collision := projectile.Update(game.objects)
-
-		// check projectile for collision with any obstacles
-		for _, obstacle := range game.obstacles {
-			if obstacle.IntersectsProjectile(projectile) {
-				collision = true
-				break
+			if g.currentLevel.IsCleared() {
+				// load next level - may want to make this a separate game state,
+				// which will allow displaying some kind of "level cleared!" message
+				// probably not great to set currentLevel right here
+				nextLevel := g.loadNextLevel()
+				if nextLevel == nil {
+					log.Println("Failed to load next level, returning to main menu")
+					g.mainMenu()
+				} else {
+					g.currentLevel = nextLevel
+				}
 			}
 		}
-
-		// only keep projectiles that have not collided with objects and are within the screen bounds
-		if !collision && isWithinScreenBounds(projectile.positionPx) {
-			remainingProjectiles = append(remainingProjectiles, projectile)
+	case statePaused:
+		// unpause the level if player presses pause button again
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			g.resume()
 		}
-
-		// may want some kind of special "destroy" function for projectiles that encounter collision?
 	}
-	game.particles = remainingProjectiles
 
 	return nil
 }
 
-// keep at top-level "game" class
 func isWithinScreenBounds(position Vector) bool {
-	return position.X >= -50 && position.X <= screenWidth+50 && position.Y >= -50 && position.Y <= screenHeight+50
+	return position.X >= -50 && position.X <= WindowWidth+50 && position.Y >= -50 && position.Y <= WindowHeight+50
 }
 
-// move to a specific "level" class.  top-level "game" update should be a state machine to display
-// different screens (i.e. pause, main menu, level, etc)
-func (game *Game) Draw(screen *ebiten.Image) {
+// eventually break up main menu and pause menu into separate classes (or at least seperate functions)
+func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x10, 0x10, 0x20, 0xff})
-	if game.playZone != nil {
-		game.playZone.Draw(screen)
+
+	if g.currentState == stateMainMenu {
+		g.drawMainMenu(screen)
+		return
 	}
 
-	ebitenutil.DebugPrint(screen, "WASD: move, mouse: aim, left click: fire")
-
-	game.player.Draw(screen)
-
-	for _, object := range game.objects {
-		object.Draw(screen)
+	if g.currentLevel != nil {
+		g.currentLevel.Draw(screen)
 	}
 
-	for _, obstacle := range game.obstacles {
-		obstacle.Draw(screen)
+	if g.currentState == statePaused {
+		g.drawPauseMenu(screen)
 	}
 
-	for _, projectile := range game.particles {
-		projectile.Draw(screen)
-	}
+	// add some kind of brief "level clear" display state
 }
 
 // keep at top-level "game" class
-func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return outsideWidth, outsideHeight
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return WindowWidth, WindowHeight
+}
+
+// draws the main menu (eventually make separate class if this gets any more invovled)
+func (g *Game) drawMainMenu(screen *ebiten.Image) {
+	// good enough for now
+	ebitenutil.DebugPrint(screen, "Main Menu\nPress Enter to start")
+
+	// probably would be better to set most of this up in constructor, since it's mostly static.
+	// good enough here for now
+
+	screenCenterX := float64(screen.Bounds().Dx() / 2)
+	screenCenterY := float64(screen.Bounds().Dy() / 2)
+	titleText := "Electron Launcher"
+	titleTextOp := &text.DrawOptions{}
+	titleTextOp.GeoM.Translate(screenCenterX, screenCenterY)
+	titleTextOp.PrimaryAlign = text.AlignCenter
+	titleTextOp.SecondaryAlign = text.AlignCenter
+	titleTextOp.ColorScale.ScaleWithColor(color.White)
+	text.Draw(screen, titleText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, titleTextOp)
+
+	subtitleText := "(title pending, work in progress)"
+	subtitleTextOp := &text.DrawOptions{}
+	subtitleTextOp.GeoM.Translate(screenCenterX, screenCenterY+50)
+	subtitleTextOp.PrimaryAlign = text.AlignCenter
+	subtitleTextOp.SecondaryAlign = text.AlignCenter
+	subtitleTextOp.ColorScale.ScaleWithColor(color.White)
+	text.Draw(screen, subtitleText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, subtitleTextOp)
+
+	instructionText := "Press ENTER to start"
+	instrTextOp := &text.DrawOptions{}
+	instrTextOp.GeoM.Translate(screenCenterX, screenCenterY+100)
+	instrTextOp.PrimaryAlign = text.AlignCenter
+	instrTextOp.SecondaryAlign = text.AlignCenter
+	instrTextOp.ColorScale.ScaleWithColor(color.White)
+	text.Draw(screen, instructionText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, instrTextOp)
+}
+
+// draws the pause menu (eventually make separate class if this gets any more invovled)
+func (g *Game) drawPauseMenu(screen *ebiten.Image) {
+	// move to be actual text in the middle of the screen (with a background box probably)
+	ebitenutil.DebugPrint(screen, "PAUSED\nPress Escape to resume")
+
+	// probably would be better to set most of this up in constructor, since it's mostly static.
+	// good enough here for now
+
+	screenCenterX := float64(screen.Bounds().Dx() / 2)
+	screenCenterY := float64(screen.Bounds().Dy() / 2)
+	pauseBoxWidthPx := 300.0
+	pauseBoxHeightPx := 200.0
+
+	vector.FillRect(screen,
+		float32(screenCenterX-pauseBoxWidthPx/2),
+		float32(screenCenterY-pauseBoxHeightPx/2),
+		float32(pauseBoxWidthPx),
+		float32(pauseBoxHeightPx),
+		color.RGBA{R: 40, G: 40, B: 80, A: 255},
+		true)
+	vector.StrokeRect(screen,
+		float32(screenCenterX-pauseBoxWidthPx/2),
+		float32(screenCenterY-pauseBoxHeightPx/2),
+		float32(pauseBoxWidthPx),
+		float32(pauseBoxHeightPx),
+		float32(4.0),
+		color.RGBA{R: 200, G: 200, B: 200, A: 255},
+		true)
+
+	pauseText := "PAUSED"
+	pauseTextOp := &text.DrawOptions{}
+	pauseTextOp.GeoM.Translate(screenCenterX, screenCenterY)
+	pauseTextOp.PrimaryAlign = text.AlignCenter
+	pauseTextOp.SecondaryAlign = text.AlignCenter
+	pauseTextOp.ColorScale.ScaleWithColor(color.White)
+	text.Draw(screen, pauseText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, pauseTextOp)
 }

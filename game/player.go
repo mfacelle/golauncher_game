@@ -8,9 +8,6 @@ import (
 )
 
 const (
-	// eventually, starting position will be defined per level
-	defaultX           = 100
-	defaultY           = 200
 	rotationRadsPerSec = math.Pi
 	movementPxPerSec   = 75
 	movementAccelPx    = 2
@@ -23,9 +20,9 @@ type Player struct {
 	sprite      *ebiten.Image
 }
 
-func NewPlayer() *Player {
+func NewPlayer(positionPx Vector) *Player {
 	return &Player{
-		positionPx:  Vector{X: defaultX, Y: defaultY},
+		positionPx:  positionPx,
 		rotationRad: 0,
 		sprite:      assets.PlayerSprite,
 	}
