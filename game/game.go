@@ -18,6 +18,7 @@ const (
 
 // need to include state machine stuff and different game states
 type Game struct {
+	// investigate using arrays of objects, not pointers
 	player    *Player
 	objects   []ChargedObject
 	obstacles []Obstacle
@@ -151,18 +152,22 @@ func isWithinScreenBounds(position Vector) bool {
 // different screens (i.e. pause, main menu, level, etc)
 func (game *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x10, 0x10, 0x20, 0xff})
-	ebitenutil.DebugPrint(screen, "WASD: move, mouse: aim, left click: fire")
-
-	game.player.Draw(screen)
 	if game.playZone != nil {
 		game.playZone.Draw(screen)
 	}
+
+	ebitenutil.DebugPrint(screen, "WASD: move, mouse: aim, left click: fire")
+
+	game.player.Draw(screen)
+
 	for _, object := range game.objects {
 		object.Draw(screen)
 	}
+
 	for _, obstacle := range game.obstacles {
 		obstacle.Draw(screen)
 	}
+
 	for _, projectile := range game.particles {
 		projectile.Draw(screen)
 	}

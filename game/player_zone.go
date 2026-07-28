@@ -21,8 +21,8 @@ func NewPlayerZone(x, y, width, height float64) *PlayerZone {
 		positionPx:    Vector{X: x, Y: y},
 		widthPx:       width,
 		heightPx:      height,
-		color:         color.RGBA{R: 80, G: 80, B: 80, A: 80},
-		borderColor:   color.RGBA{R: 200, G: 200, B: 200, A: 255},
+		color:         color.RGBA{R: 20, G: 20, B: 40, A: 255},
+		borderColor:   color.RGBA{R: 120, G: 120, B: 120, A: 255},
 		borderWidthPx: 2,
 	}
 }
