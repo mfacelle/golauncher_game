@@ -1,11 +1,7 @@
 [
     {
       "type": "levelInfo",
-      "name": "Level 3",
-      "positionPx": {
-        "X": 0,
-        "Y": 0
-      },
+      "name": "Level 6",
       "color": {"R": 10, "G": 10, "B": 10, "A": 255}
     },
     {
@@ -52,8 +48,8 @@
     {
       "type": "goal",
       "positionPx": {
-        "X": 100,
-        "Y": 300
+        "X": 200,
+        "Y": 600
       },
       "radius": 40,
       "color": {
@@ -75,7 +71,7 @@
       "type": "obstacle",
       "positionPx": {
         "X": 390,
-        "Y": 440
+        "Y": 450
       },
       "widthPx": 20,
       "heightPx": 350,
@@ -97,12 +93,17 @@
       "radius": 20,
       "color": {
         "R": 255,
-        "G": 100,
-        "B": 100,
+        "G": 50,
+        "B": 50,
         "A": 255
       },
-      "borderColor": {"R": 255, "G": 150, "B": 150, "A": 255},
+      "borderColor": {
+        "R": 200,
+        "G": 10,
+        "B": 10,
+        "A": 255
+      },
       "borderWidthPx": 3,
-      "charge": 1000
+      "charge": 5000
     }
   ]

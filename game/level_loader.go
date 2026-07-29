@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"golauncher_game/assets"
 	"image/color"
 	"log"
 	"os"
@@ -24,7 +25,7 @@ type levelObjectJSON struct {
 // load all objects from JSON file.
 // Using JSON so it's easy to edit (at least until I make some kind of level editor app)
 // would XML have been better for this?
-func loadLevelFromJSON(path string) *Level {
+func loadLevelFromJSON(path string, info *PlayerInfo) *Level {
 	file, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		log.Printf("failed to read level file %s: %v", path, err)
@@ -49,27 +50,38 @@ func loadLevelFromJSON(path string) *Level {
 		switch data.Type {
 		case "obstacle":
 			obstacles = append(obstacles, Obstacle{
-				positionPx: data.PositionPx,
-				widthPx:    data.WidthPx,
-				heightPx:   data.HeightPx,
-				color:      data.Color,
+				positionPx:    data.PositionPx,
+				widthPx:       data.WidthPx,
+				heightPx:      data.HeightPx,
+				color:         data.Color,
+				borderColor:   data.BorderColor,
+				borderWidthPx: data.BorderWidthPx,
 			})
 		case "chargedObject":
+			sprite := assets.SheepRedSprite
+			if data.Charge < 0 {
+				sprite = assets.SheepBlueSprite
+			}
 			objects = append(objects, ChargedObject{
-				positionPx: data.PositionPx,
-				radius:     data.Radius,
-				color:      data.Color,
-				charge:     data.Charge,
+				positionPx:    data.PositionPx,
+				radius:        data.Radius,
+				color:         data.Color,
+				charge:        data.Charge,
+				borderColor:   data.BorderColor,
+				borderWidthPx: data.BorderWidthPx,
+				sprite:        sprite,
 			})
 		case "goal":
 			goal = &GoalObject{
 				ChargedObject: ChargedObject{
-					positionPx: data.PositionPx,
-					radius:     data.Radius,
-					color:      data.Color,
-					charge:     data.Charge},
-				borderColor:   data.BorderColor,
-				borderWidthPx: data.BorderWidthPx,
+					positionPx:    data.PositionPx,
+					radius:        data.Radius,
+					color:         data.Color,
+					charge:        data.Charge,
+					borderColor:   data.BorderColor,
+					borderWidthPx: data.BorderWidthPx,
+					sprite:        assets.SheepGoalSprite,
+				},
 			}
 			// add just ChargedObject portion of goal to objects list
 			objects = append(objects, goal.ChargedObject)
@@ -94,11 +106,11 @@ func loadLevelFromJSON(path string) *Level {
 
 	// require a goal and player be defined
 	if player == nil {
-		log.Printf("Missing Player object definition in %s: %v", path)
+		log.Printf("Missing Player object definition in %s", path)
 		return nil
 	}
 	if goal == nil {
-		log.Printf("Missing Goal object definition in %s: %v", path)
+		log.Printf("Missing Goal object definition in %s", path)
 		return nil
 	}
 
@@ -110,5 +122,6 @@ func loadLevelFromJSON(path string) *Level {
 		obstacles:       obstacles,
 		playZone:        playerZone,
 		backgroundColor: backgroundColor,
+		info:            info,
 	}
 }

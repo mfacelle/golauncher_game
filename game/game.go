@@ -15,11 +15,6 @@ import (
 	"golauncher_game/assets"
 )
 
-const (
-	WindowWidth  = 800
-	WindowHeight = 800
-)
-
 type gameState int
 
 const (
@@ -44,20 +39,25 @@ type Game struct {
 	currentState      gameState
 	currentLevel      *Level
 	currentLevelValue int
-	menuText          string
-	state             gameState
+	highScoreText     string
+	info              PlayerInfo
 }
 
 // create a new game object
 func NewGame() *Game {
 	log.Println("new game")
 
-	g := &Game{}
-	g.currentState = stateMainMenu
 	// start at level 1.  eventually, add some kind of level select menu
-	g.currentLevelValue = 0
-	g.menuText = "Press Enter to start"
-	g.currentState = stateMainMenu
+	g := &Game{
+		currentState:      stateMainMenu,
+		currentLevel:      nil,
+		currentLevelValue: 0,
+		highScoreText:     "High Score: 0",
+		info: PlayerInfo{
+			NumParticles:  InitParticleCount,
+			LevelsCleared: InitScore,
+		},
+	}
 
 	return g
 }
@@ -73,7 +73,7 @@ func (g *Game) loadNextLevel() *Level {
 
 	levelFileName := fmt.Sprintf("levels/level%d.json", g.currentLevelValue)
 	log.Printf("Loading %s\n", levelFileName)
-	return loadLevelFromJSON(levelFileName)
+	return loadLevelFromJSON(levelFileName, &g.info)
 }
 
 func (g *Game) start() {
@@ -84,8 +84,14 @@ func (g *Game) start() {
 
 func (g *Game) mainMenu() {
 	log.Println("back to main menu")
+	g.highScoreText = fmt.Sprintf("High Score: %d", g.info.CalculateScore())
 	g.currentState = stateMainMenu
 	g.currentLevelValue = 0
+	// reset player info
+	g.info = PlayerInfo{
+		NumParticles:  InitParticleCount,
+		LevelsCleared: InitScore,
+	}
 }
 
 func (g *Game) pause() {
@@ -102,12 +108,19 @@ func (g *Game) resume() {
 
 // eventually break up main menu and pause menu into separate classes
 func (g *Game) Update() error {
+
+	// additional states to add:
+	// level clear (show brief screen, load next level)
+	// game over (show brief screen, return to main menu)
+	// victory screen (all levels cleared, show brief screen, return to main menu)
+
 	// this should probably be broken up into calling Update on each object, based on state.
 	// for now, this works, though
 	switch g.currentState {
 	case stateMainMenu:
-		// start the level if player presses start button
-		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+		// start the level if player presses start button or clicks mouse
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) ||
+			inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			g.start()
 		}
 	case statePlaying:
@@ -123,10 +136,11 @@ func (g *Game) Update() error {
 				return err
 			}
 
-			if g.currentLevel.IsCleared() {
+			if g.currentLevel.IsCleared {
 				// load next level - may want to make this a separate game state,
 				// which will allow displaying some kind of "level cleared!" message
 				// probably not great to set currentLevel right here
+				g.info.LevelsCleared++
 				nextLevel := g.loadNextLevel()
 				if nextLevel == nil {
 					log.Println("Failed to load next level, returning to main menu")
@@ -134,6 +148,10 @@ func (g *Game) Update() error {
 				} else {
 					g.currentLevel = nextLevel
 				}
+			} else if g.currentLevel.GameOver {
+				// show some kind of game over screen
+				log.Println("Level failed!")
+				g.mainMenu()
 			}
 		}
 	case statePaused:
@@ -147,12 +165,14 @@ func (g *Game) Update() error {
 }
 
 func isWithinScreenBounds(position Vector) bool {
-	return position.X >= -50 && position.X <= WindowWidth+50 && position.Y >= -50 && position.Y <= WindowHeight+50
+	// buffer of 5 px around screen edges
+	bufferPx := 5.0
+	return position.X >= -bufferPx && position.X <= WindowWidth+bufferPx && position.Y >= -bufferPx && position.Y <= WindowHeight+bufferPx
 }
 
 // eventually break up main menu and pause menu into separate classes (or at least seperate functions)
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{0x10, 0x10, 0x20, 0xff})
+	screen.Fill(color.RGBA{0x20, 0x20, 0x20, 0xff})
 
 	if g.currentState == stateMainMenu {
 		g.drawMainMenu(screen)
@@ -178,14 +198,14 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 // draws the main menu (eventually make separate class if this gets any more invovled)
 func (g *Game) drawMainMenu(screen *ebiten.Image) {
 	// good enough for now
-	ebitenutil.DebugPrint(screen, "Main Menu\nPress Enter to start")
+	ebitenutil.DebugPrint(screen, "Main Menu\nPress Enter or click mouse to start")
 
 	// probably would be better to set most of this up in constructor, since it's mostly static.
 	// good enough here for now
 
 	screenCenterX := float64(screen.Bounds().Dx() / 2)
 	screenCenterY := float64(screen.Bounds().Dy() / 2)
-	titleText := "Electron Launcher"
+	titleText := "Static Sheep"
 	titleTextOp := &text.DrawOptions{}
 	titleTextOp.GeoM.Translate(screenCenterX, screenCenterY)
 	titleTextOp.PrimaryAlign = text.AlignCenter
@@ -193,13 +213,13 @@ func (g *Game) drawMainMenu(screen *ebiten.Image) {
 	titleTextOp.ColorScale.ScaleWithColor(color.White)
 	text.Draw(screen, titleText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, titleTextOp)
 
-	subtitleText := "(title pending, work in progress)"
+	subtitleText := "(work in progress, no sheep yet)"
 	subtitleTextOp := &text.DrawOptions{}
 	subtitleTextOp.GeoM.Translate(screenCenterX, screenCenterY+50)
 	subtitleTextOp.PrimaryAlign = text.AlignCenter
 	subtitleTextOp.SecondaryAlign = text.AlignCenter
 	subtitleTextOp.ColorScale.ScaleWithColor(color.White)
-	text.Draw(screen, subtitleText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, subtitleTextOp)
+	text.Draw(screen, subtitleText, &text.GoTextFace{Source: assets.MainFont, Size: 18}, subtitleTextOp)
 
 	instructionText := "Press ENTER to start"
 	instrTextOp := &text.DrawOptions{}
@@ -208,6 +228,13 @@ func (g *Game) drawMainMenu(screen *ebiten.Image) {
 	instrTextOp.SecondaryAlign = text.AlignCenter
 	instrTextOp.ColorScale.ScaleWithColor(color.White)
 	text.Draw(screen, instructionText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, instrTextOp)
+
+	highScoreTextOp := &text.DrawOptions{}
+	highScoreTextOp.GeoM.Translate(screenCenterX, screenCenterY+200)
+	highScoreTextOp.PrimaryAlign = text.AlignCenter
+	highScoreTextOp.SecondaryAlign = text.AlignCenter
+	highScoreTextOp.ColorScale.ScaleWithColor(color.White)
+	text.Draw(screen, g.highScoreText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, highScoreTextOp)
 }
 
 // draws the pause menu (eventually make separate class if this gets any more invovled)

@@ -1,11 +1,11 @@
 package game
 
 import (
+	"golauncher_game/assets"
 	"image/color"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type BasicParticle struct {
@@ -14,6 +14,7 @@ type BasicParticle struct {
 	charge     float64
 	radiusPx   float64
 	color      color.RGBA
+	sprite     *ebiten.Image
 }
 
 const (
@@ -31,8 +32,9 @@ func NewBasicParticle(posPx Vector, rotationRad float64) *BasicParticle {
 			Y: initialVelocity * math.Sin(rotationRad),
 		},
 		charge:   -10,
-		radiusPx: 2,
+		radiusPx: 4,
 		color:    color.RGBA{R: 100, G: 100, B: 255, A: 255},
+		sprite:   assets.FluffBlueSprite,
 	}
 }
 
@@ -87,5 +89,9 @@ func (p *BasicParticle) Update(objects []ChargedObject) bool {
 }
 
 func (p *BasicParticle) Draw(screen *ebiten.Image) {
-	vector.FillCircle(screen, float32(p.positionPx.X), float32(p.positionPx.Y), float32(p.radiusPx), p.color, false)
+	// vector.FillCircle(screen, float32(p.positionPx.X), float32(p.positionPx.Y), float32(p.radiusPx), p.color, false)
+
+	drawOpts := &ebiten.DrawImageOptions{}
+	drawOpts.GeoM.Translate(p.positionPx.X, p.positionPx.Y)
+	screen.DrawImage(p.sprite, drawOpts)
 }

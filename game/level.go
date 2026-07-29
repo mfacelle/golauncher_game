@@ -1,12 +1,15 @@
 package game
 
 import (
+	"fmt"
+	"golauncher_game/assets"
 	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 // represents a "level" which has a goal, obstacles, objects, the player zone, and particles that
@@ -21,18 +24,27 @@ type Level struct {
 	playZone        *PlayerZone
 	particles       []*BasicParticle
 	backgroundColor color.RGBA
-	isCleared       bool
-}
-
-func (level Level) IsCleared() bool {
-	return level.isCleared
+	IsCleared       bool
+	GameOver        bool
+	info            *PlayerInfo
 }
 
 func (level *Level) Update() error {
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+
+	// if no particles remaining, fail the level
+	if level.info.NumParticles == 0 && len(level.particles) == 0 {
+		level.GameOver = true
+	}
+
+	// eventually:
+	// - include options to switch to different types of particles (and add text for it)
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
+		level.info.NumParticles > 0 {
 		playerCenter := level.player.Center()
 		projectile := NewBasicParticle(playerCenter, level.player.rotationRad)
 		level.particles = append(level.particles, projectile)
+
+		level.info.NumParticles--
 	}
 
 	level.player.Update()
@@ -60,7 +72,7 @@ func (level *Level) Update() error {
 		// check for goal collision, indicating level is cleared
 		if level.goal.IntersectsProjectile(projectile) {
 			collision = true
-			level.isCleared = true
+			level.IsCleared = true
 			log.Println("Level cleared!")
 		}
 
@@ -81,8 +93,7 @@ func (level *Level) Draw(screen *ebiten.Image) {
 		level.playZone.Draw(screen)
 	}
 
-	ebitenutil.DebugPrint(screen, "WASD: move, mouse: aim, left click: fire")
-	ebitenutil.DebugPrint(screen, "\n"+level.name)
+	ebitenutil.DebugPrint(screen, "WASD: move | mouse: aim | left click: fire | "+level.name)
 
 	level.player.Draw(screen)
 
@@ -99,4 +110,27 @@ func (level *Level) Draw(screen *ebiten.Image) {
 	}
 
 	level.goal.Draw(screen)
+
+	// draw remaining particle count and label
+	// note: some of this stuff is static and could be set up in constructor
+	particleCountText := fmt.Sprintf("%d", level.info.NumParticles)
+	textFont := &text.GoTextFace{Source: assets.MainFont, Size: 48}
+	_, textHeight := text.Measure(particleCountText, textFont, 0)
+	textOp := &text.DrawOptions{}
+	// padding with 20 pixels
+	textOp.GeoM.Translate(0, 20)
+	textOp.PrimaryAlign = text.AlignStart
+	textOp.SecondaryAlign = text.AlignStart
+	textOp.ColorScale.ScaleWithColor(color.White)
+	text.Draw(screen, particleCountText, textFont, textOp)
+
+	particleCountLabel := "Particles\nRemaining"
+	labelFont := &text.GoTextFace{Source: assets.MainFont, Size: 18}
+	labelOp := &text.DrawOptions{}
+	labelOp.GeoM.Translate(0, textHeight+10)
+	labelOp.PrimaryAlign = text.AlignStart
+	labelOp.SecondaryAlign = text.AlignStart
+	labelOp.LineSpacing = 12
+	labelOp.ColorScale.ScaleWithColor(color.White)
+	text.Draw(screen, particleCountLabel, labelFont, labelOp)
 }

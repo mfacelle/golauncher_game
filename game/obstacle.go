@@ -11,19 +11,12 @@ import (
 // considering adding a charge to some eventually, but would need to figure out how to best calculate
 // attraction/repulsion forces
 type Obstacle struct {
-	positionPx Vector
-	widthPx    float64
-	heightPx   float64
-	color      color.RGBA
-}
-
-func NewObstacle(x, y float64) *Obstacle {
-	return &Obstacle{
-		positionPx: Vector{X: x, Y: y},
-		widthPx:    40,
-		heightPx:   20,
-		color:      color.RGBA{R: 120, G: 120, B: 120, A: 255},
-	}
+	positionPx    Vector
+	widthPx       float64
+	heightPx      float64
+	color         color.RGBA
+	borderColor   color.RGBA
+	borderWidthPx float64
 }
 
 func (o *Obstacle) Update() error {
@@ -43,4 +36,6 @@ func (o *Obstacle) IntersectsProjectile(projectile *BasicParticle) bool {
 
 func (o *Obstacle) Draw(screen *ebiten.Image) {
 	vector.FillRect(screen, float32(o.positionPx.X), float32(o.positionPx.Y), float32(o.widthPx), float32(o.heightPx), o.color, true)
+	vector.StrokeRect(screen, float32(o.positionPx.X), float32(o.positionPx.Y), float32(o.widthPx), float32(o.heightPx), float32(o.borderWidthPx), o.borderColor, true)
+
 }
