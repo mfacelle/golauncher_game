@@ -4,7 +4,6 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 // represents an object that has a charge that can attract/repel particles launched by the player.
@@ -22,7 +21,7 @@ func (o *ChargedObject) Update() error {
 	return nil
 }
 
-func (o *ChargedObject) IntersectsProjectile(projectile *BasicParticle) bool {
+func (o *ChargedObject) IntersectsParticle(projectile *BasicParticle) bool {
 	if projectile == nil {
 		return false
 	}
@@ -30,27 +29,23 @@ func (o *ChargedObject) IntersectsProjectile(projectile *BasicParticle) bool {
 	dx := projectile.positionPx.X - o.positionPx.X
 	dy := projectile.positionPx.Y - o.positionPx.Y
 	distanceSq := dx*dx + dy*dy
-	collisionRadius := o.radius + projectile.radiusPx
+	// ignoring projectile size for now. looks better with sprites this way
+	collisionRadius := o.radius //+ projectile.radiusPx
 
 	return distanceSq <= collisionRadius*collisionRadius
 }
 
 func (o *ChargedObject) Draw(screen *ebiten.Image) {
 	// vector.FillCircle(screen, float32(o.positionPx.X), float32(o.positionPx.Y), float32(o.radius), o.color, true)
-	vector.StrokeCircle(screen, float32(o.positionPx.X), float32(o.positionPx.Y), float32(o.radius), float32(o.borderWidthPx), o.borderColor, true)
+	// vector.StrokeCircle(screen, float32(o.positionPx.X), float32(o.positionPx.Y), float32(o.radius), float32(o.borderWidthPx), o.borderColor, true)
 
-	bounds := o.sprite.Bounds()
-	halfWidth := float64(bounds.Dx()) / 2
-	halfHeight := float64(bounds.Dy()) / 2
-
-	drawOpts := &ebiten.DrawImageOptions{}
 	// scale sprite up to fit radius of object
-	drawOpts.GeoM.Translate(-halfWidth, -halfHeight)
+	drawOpts := &ebiten.DrawImageOptions{}
+	bounds := o.sprite.Bounds()
 	drawOpts.GeoM.Scale((o.radius*2.0)/float64(bounds.Dx()), (o.radius*2.0)/float64(bounds.Dy()))
-	drawOpts.GeoM.Translate(halfWidth, halfHeight)
 
-	// log.Printf("dx=%d, dy=%d, radius*2=%.2f, scaledX=%.2f", bounds.Dx(), bounds.Dy(), o.radius*2.0, (o.radius*2.0)/float64(bounds.Dx()))
-
-	drawOpts.GeoM.Translate(o.positionPx.X-float64(bounds.Dx()), o.positionPx.Y-float64(bounds.Dy()))
+	// need to offset by radius. circle is draw with position at center,
+	// sprite drawn with position at top-left
+	drawOpts.GeoM.Translate(o.positionPx.X-o.radius, o.positionPx.Y-o.radius)
 	screen.DrawImage(o.sprite, drawOpts)
 }

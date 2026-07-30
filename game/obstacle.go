@@ -23,7 +23,7 @@ func (o *Obstacle) Update() error {
 	return nil
 }
 
-func (o *Obstacle) IntersectsProjectile(projectile *BasicParticle) bool {
+func (o *Obstacle) IntersectsParticle(projectile *BasicParticle) bool {
 	if projectile == nil {
 		return false
 	}

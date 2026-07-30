@@ -18,10 +18,13 @@ var assets embed.FS
 var fontData []byte
 
 var PlayerSprite = mustLoadImage("player.png")
-var SheepGoalSprite = mustLoadImage("sheep_goal.png")
+var SheepWhiteSprite = mustLoadImage("sheep_white.png")
 var SheepRedSprite = mustLoadImage("sheep_red.png")
+var SheepDarkRedSprite = mustLoadImage("sheep_darkred.png")
 var SheepBlueSprite = mustLoadImage("sheep_blue.png")
+var SheepDarkBlueSprite = mustLoadImage("sheep_darkblue.png")
 var FluffWhiteSprite = mustLoadImage("fluff_white.png")
+var FluffBigSprite = mustLoadImage("fluff_big.png")
 var FluffRedSprite = mustLoadImage("fluff_red.png")
 var FluffBlueSprite = mustLoadImage("fluff_blue.png")
 var MainFont = mustLoadFont("font.ttf")

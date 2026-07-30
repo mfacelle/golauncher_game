@@ -1,10 +1,5 @@
 package game
 
-const (
-	InitParticleCount = 100
-	InitScore         = 0
-)
-
 // holds into about the player, such as
 // - number of levels completed
 // - remaining projectiles

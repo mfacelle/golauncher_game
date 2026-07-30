@@ -1,109 +1,120 @@
 [
-    {
-      "type": "levelInfo",
-      "name": "Level 6",
-      "color": {"R": 10, "G": 10, "B": 10, "A": 255}
-    },
-    {
-      "type": "playerZone",
-      "positionPx": {
-        "X": 450,
-        "Y": 600
-      },
-      "widthPx": 350,
-      "heightPx": 200,
-      "color": {
-        "R": 20,
-        "G": 20,
-        "B": 40,
-        "A": 255
-      },
-      "borderColor": {
-        "R": 120,
-        "G": 120,
-        "B": 140,
-        "A": 255
-      },
-      "borderWidthPx": 2
-    },
-    {
-      "type": "player",
-      "positionPx": {
-        "X": 650,
-        "Y": 650
-      },
-      "color": {
-        "R": 0,
-        "G": 0,
-        "B": 0,
-        "A": 0
-      },
-      "borderColor": {
-        "R": 0,
-        "G": 0,
-        "B": 0,
-        "A": 0
-      }
-    },
-    {
-      "type": "goal",
-      "positionPx": {
-        "X": 200,
-        "Y": 600
-      },
-      "radius": 40,
-      "color": {
-        "R": 255,
-        "G": 100,
-        "B": 100,
-        "A": 255
-      },
-      "borderColor": {
-        "R": 200,
-        "G": 200,
-        "B": 200,
-        "A": 255
-      },
-      "borderWidthPx": 4,
-      "charge": 1000
-    },
-    {
-      "type": "obstacle",
-      "positionPx": {
-        "X": 390,
-        "Y": 450
-      },
-      "widthPx": 20,
-      "heightPx": 350,
-      "color": {
-        "R": 120,
-        "G": 120,
-        "B": 120,
-        "A": 255
-      },
-      "borderColor": {"R": 200, "G": 200, "B": 200, "A": 255},
-      "borderWidthPx": 2
-    },
-    {
-      "type": "chargedObject",
-      "positionPx": {
-        "X": 400,
-        "Y": 400
-      },
-      "radius": 20,
-      "color": {
-        "R": 255,
-        "G": 50,
-        "B": 50,
-        "A": 255
-      },
-      "borderColor": {
-        "R": 200,
-        "G": 10,
-        "B": 10,
-        "A": 255
-      },
-      "borderWidthPx": 3,
-      "charge": 5000
+  {
+    "type": "levelInfo",
+    "name": "Level 6",
+    "color": {
+      "R": 53,
+      "G": 128,
+      "B": 52,
+      "A": 255
     }
-  ]
+  },
+  {
+    "type": "playerZone",
+    "positionPx": {
+      "X": 450,
+      "Y": 550
+    },
+    "widthPx": 350,
+    "heightPx": 200,
+    "color": {
+      "R": 90,
+      "G": 81,
+      "B": 63,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 77,
+      "G": 77,
+      "B": 69,
+      "A": 255
+    },
+    "borderWidthPx": 2
+  },
+  {
+    "type": "player",
+    "positionPx": {
+      "X": 650,
+      "Y": 600
+    },
+    "color": {
+      "R": 0,
+      "G": 0,
+      "B": 0,
+      "A": 0
+    },
+    "borderColor": {
+      "R": 0,
+      "G": 0,
+      "B": 0,
+      "A": 0
+    }
+  },
+  {
+    "type": "goal",
+    "positionPx": {
+      "X": 200,
+      "Y": 550
+    },
+    "radius": 40,
+    "color": {
+      "R": 255,
+      "G": 100,
+      "B": 100,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 200,
+      "B": 200,
+      "A": 255
+    },
+    "borderWidthPx": 4,
+    "charge": 1000
+  },
+  {
+    "type": "obstacle",
+    "positionPx": {
+      "X": 390,
+      "Y": 400
+    },
+    "widthPx": 20,
+    "heightPx": 350,
+    "color": {
+      "R": 120,
+      "G": 120,
+      "B": 120,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 200,
+      "B": 200,
+      "A": 255
+    },
+    "borderWidthPx": 2
+  },
+  {
+    "type": "chargedObject",
+    "positionPx": {
+      "X": 400,
+      "Y": 350
+    },
+    "radius": 20,
+    "color": {
+      "R": 255,
+      "G": 50,
+      "B": 50,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 10,
+      "B": 10,
+      "A": 255
+    },
+    "borderWidthPx": 3,
+    "charge": 5000,
+    "sprite": "sheep_darkred"
+  }
+]

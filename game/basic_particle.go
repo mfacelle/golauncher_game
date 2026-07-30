@@ -19,11 +19,12 @@ type BasicParticle struct {
 
 const (
 	initialVelocity       = 180.0
-	electrostaticConstant = 100 // really 8.98e9
+	electrostaticConstant = 100 // 8.98e9 in the real world
 	softening             = 1.0
-	maxDistance           = 800.0
+	maxDistance           = 600.0
 )
 
+// probably want to return a regular object, not a pointer. need to look into this more
 func NewBasicParticle(posPx Vector, rotationRad float64) *BasicParticle {
 	return &BasicParticle{
 		positionPx: posPx,
@@ -34,7 +35,7 @@ func NewBasicParticle(posPx Vector, rotationRad float64) *BasicParticle {
 		charge:   -10,
 		radiusPx: 4,
 		color:    color.RGBA{R: 100, G: 100, B: 255, A: 255},
-		sprite:   assets.FluffBlueSprite,
+		sprite:   assets.FluffBigSprite,
 	}
 }
 
@@ -46,10 +47,12 @@ func (p *BasicParticle) Update(objects []ChargedObject) bool {
 	accelerationY := 0.0
 
 	for _, object := range objects {
-		// check for collision and don't update if one occurs
-		if object.IntersectsProjectile(p) {
+		// check for collision and stop updating if one occurs
+		if object.IntersectsParticle(p) {
 			p.velocityPx = Vector{}
 			collision = true
+			accelerationX = 0.0
+			accelerationY = 0.0
 			break
 		}
 
@@ -79,7 +82,7 @@ func (p *BasicParticle) Update(objects []ChargedObject) bool {
 		}
 	}
 
-	// update velocity, then position
+	// update velocity, then position (convert from per second to per tick)
 	p.velocityPx.X += accelerationX / float64(ebiten.TPS())
 	p.velocityPx.Y += accelerationY / float64(ebiten.TPS())
 	p.positionPx.X += p.velocityPx.X / float64(ebiten.TPS())
@@ -92,6 +95,7 @@ func (p *BasicParticle) Draw(screen *ebiten.Image) {
 	// vector.FillCircle(screen, float32(p.positionPx.X), float32(p.positionPx.Y), float32(p.radiusPx), p.color, false)
 
 	drawOpts := &ebiten.DrawImageOptions{}
-	drawOpts.GeoM.Translate(p.positionPx.X, p.positionPx.Y)
+	// shift by radius to center sprite on particle
+	drawOpts.GeoM.Translate(p.positionPx.X-p.radiusPx, p.positionPx.Y-p.radiusPx)
 	screen.DrawImage(p.sprite, drawOpts)
 }

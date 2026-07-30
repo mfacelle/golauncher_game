@@ -21,6 +21,9 @@ const (
 	stateMainMenu gameState = iota
 	statePlaying
 	statePaused
+	stateLevelCleared
+	stateGameOver
+	stateVictory
 )
 
 // get gameState string, for debugging
@@ -41,6 +44,8 @@ type Game struct {
 	currentLevelValue int
 	highScoreText     string
 	info              PlayerInfo
+	totalNumLevels    int
+	durationTickCount int
 }
 
 // create a new game object
@@ -57,6 +62,8 @@ func NewGame() *Game {
 			NumParticles:  InitParticleCount,
 			LevelsCleared: InitScore,
 		},
+		totalNumLevels:    CountTotalNumLevels("levels/level*.json"),
+		durationTickCount: 0,
 	}
 
 	return g
@@ -74,6 +81,17 @@ func (g *Game) loadNextLevel() *Level {
 	levelFileName := fmt.Sprintf("levels/level%d.json", g.currentLevelValue)
 	log.Printf("Loading %s\n", levelFileName)
 	return loadLevelFromJSON(levelFileName, &g.info)
+}
+
+func (g *Game) nextLevel() {
+	nextLevel := g.loadNextLevel()
+	if nextLevel == nil {
+		log.Println("Failed to load next level, returning to main menu")
+		g.mainMenu()
+	} else {
+		g.currentLevel = nextLevel
+		g.currentState = statePlaying
+	}
 }
 
 func (g *Game) start() {
@@ -106,6 +124,24 @@ func (g *Game) resume() {
 	}
 }
 
+func (g *Game) levelCleared() {
+	// state update logic will handle moving to next level
+	g.currentState = stateLevelCleared
+	g.durationTickCount = 0
+}
+
+func (g *Game) gameOver() {
+	// state update logic will handle returning to main menu
+	g.currentState = stateGameOver
+	g.durationTickCount = 0
+}
+
+func (g *Game) victory() {
+	// state update logic will handle returning to main menu
+	g.currentState = stateVictory
+	g.durationTickCount = 0
+}
+
 // eventually break up main menu and pause menu into separate classes
 func (g *Game) Update() error {
 
@@ -115,7 +151,7 @@ func (g *Game) Update() error {
 	// victory screen (all levels cleared, show brief screen, return to main menu)
 
 	// this should probably be broken up into calling Update on each object, based on state.
-	// for now, this works, though
+	// for now, this works, though.  but maybe split them up into separate functions?
 	switch g.currentState {
 	case stateMainMenu:
 		// start the level if player presses start button or clicks mouse
@@ -137,27 +173,45 @@ func (g *Game) Update() error {
 			}
 
 			if g.currentLevel.IsCleared {
-				// load next level - may want to make this a separate game state,
-				// which will allow displaying some kind of "level cleared!" message
-				// probably not great to set currentLevel right here
+				// check if this was the last level, and load victory screen if it was.
+				// otherwise, load next level
 				g.info.LevelsCleared++
-				nextLevel := g.loadNextLevel()
-				if nextLevel == nil {
-					log.Println("Failed to load next level, returning to main menu")
-					g.mainMenu()
+				if g.currentLevelValue >= g.totalNumLevels {
+					g.victory()
 				} else {
-					g.currentLevel = nextLevel
+					g.levelCleared()
 				}
 			} else if g.currentLevel.GameOver {
 				// show some kind of game over screen
 				log.Println("Level failed!")
-				g.mainMenu()
+				g.gameOver()
 			}
 		}
 	case statePaused:
 		// unpause the level if player presses pause button again
 		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 			g.resume()
+		}
+	case stateLevelCleared:
+		// consider also updating level, to keep any particles moving
+		// update count of ticks and move to next level if tick count reached
+		g.durationTickCount++
+		if g.durationTickCount > LevelClearedDurationS*ebiten.TPS() {
+			g.nextLevel()
+		}
+	case stateGameOver:
+		// consider also updating level, to keep any particles moving
+		// update count of ticks and go back to main menu if tick count reached
+		g.durationTickCount++
+		if g.durationTickCount > GameOverScreenDurationS*ebiten.TPS() {
+			g.mainMenu()
+		}
+	case stateVictory:
+		// consider also updating level, to keep any particles moving
+		// update count of ticks and go back to main menu if tick count reached
+		g.durationTickCount++
+		if g.durationTickCount > VictoryScreenDurationS*ebiten.TPS() {
+			g.mainMenu()
 		}
 	}
 
@@ -172,19 +226,30 @@ func isWithinScreenBounds(position Vector) bool {
 
 // eventually break up main menu and pause menu into separate classes (or at least seperate functions)
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{0x20, 0x20, 0x20, 0xff})
+	screen.Fill(color.RGBA{53, 128, 52, 255})
 
+	// if main menu, return to prevent drawing current level
 	if g.currentState == stateMainMenu {
 		g.drawMainMenu(screen)
 		return
 	}
 
+	// draw current level
 	if g.currentLevel != nil {
 		g.currentLevel.Draw(screen)
 	}
 
+	// draw states that overlay on top of the current level
 	if g.currentState == statePaused {
 		g.drawPauseMenu(screen)
+	}
+
+	if g.currentState == stateLevelCleared {
+		g.drawLevelCleared(screen)
+	} else if g.currentState == stateGameOver {
+		g.drawGameOver(screen)
+	} else if g.currentState == stateVictory {
+		g.drawVictory(screen)
 	}
 
 	// add some kind of brief "level clear" display state
@@ -194,6 +259,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return WindowWidth, WindowHeight
 }
+
+// -----
+// the following functions need to be revisited... lots of static stuff that can be done on initialization.
+// should also probably move these to their own classes.  keeping here as "good enough" for now
 
 // draws the main menu (eventually make separate class if this gets any more invovled)
 func (g *Game) drawMainMenu(screen *ebiten.Image) {
@@ -210,34 +279,36 @@ func (g *Game) drawMainMenu(screen *ebiten.Image) {
 	titleTextOp.GeoM.Translate(screenCenterX, screenCenterY)
 	titleTextOp.PrimaryAlign = text.AlignCenter
 	titleTextOp.SecondaryAlign = text.AlignCenter
-	titleTextOp.ColorScale.ScaleWithColor(color.White)
+	titleTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
 	text.Draw(screen, titleText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, titleTextOp)
 
-	subtitleText := "(work in progress, no sheep yet)"
+	subtitleText := "(work in progress)"
 	subtitleTextOp := &text.DrawOptions{}
 	subtitleTextOp.GeoM.Translate(screenCenterX, screenCenterY+50)
 	subtitleTextOp.PrimaryAlign = text.AlignCenter
 	subtitleTextOp.SecondaryAlign = text.AlignCenter
-	subtitleTextOp.ColorScale.ScaleWithColor(color.White)
+	subtitleTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
 	text.Draw(screen, subtitleText, &text.GoTextFace{Source: assets.MainFont, Size: 18}, subtitleTextOp)
 
-	instructionText := "Press ENTER to start"
+	instructionText := "Press ENTER or click mouse to start"
 	instrTextOp := &text.DrawOptions{}
 	instrTextOp.GeoM.Translate(screenCenterX, screenCenterY+100)
 	instrTextOp.PrimaryAlign = text.AlignCenter
 	instrTextOp.SecondaryAlign = text.AlignCenter
-	instrTextOp.ColorScale.ScaleWithColor(color.White)
+	instrTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
 	text.Draw(screen, instructionText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, instrTextOp)
 
 	highScoreTextOp := &text.DrawOptions{}
 	highScoreTextOp.GeoM.Translate(screenCenterX, screenCenterY+200)
 	highScoreTextOp.PrimaryAlign = text.AlignCenter
 	highScoreTextOp.SecondaryAlign = text.AlignCenter
-	highScoreTextOp.ColorScale.ScaleWithColor(color.White)
+	highScoreTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
 	text.Draw(screen, g.highScoreText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, highScoreTextOp)
 }
 
 // draws the pause menu (eventually make separate class if this gets any more invovled)
+// note: this code is essentially reused for level cleared, game over, and victory.  consider
+// making this into a generic "draw menu" type of function or class
 func (g *Game) drawPauseMenu(screen *ebiten.Image) {
 	// move to be actual text in the middle of the screen (with a background box probably)
 	ebitenutil.DebugPrint(screen, "PAUSED\nPress Escape to resume")
@@ -255,7 +326,7 @@ func (g *Game) drawPauseMenu(screen *ebiten.Image) {
 		float32(screenCenterY-pauseBoxHeightPx/2),
 		float32(pauseBoxWidthPx),
 		float32(pauseBoxHeightPx),
-		color.RGBA{R: 40, G: 40, B: 80, A: 255},
+		ColorLightBorder,
 		true)
 	vector.StrokeRect(screen,
 		float32(screenCenterX-pauseBoxWidthPx/2),
@@ -263,7 +334,7 @@ func (g *Game) drawPauseMenu(screen *ebiten.Image) {
 		float32(pauseBoxWidthPx),
 		float32(pauseBoxHeightPx),
 		float32(4.0),
-		color.RGBA{R: 200, G: 200, B: 200, A: 255},
+		ColorBorder,
 		true)
 
 	pauseText := "PAUSED"
@@ -271,6 +342,142 @@ func (g *Game) drawPauseMenu(screen *ebiten.Image) {
 	pauseTextOp.GeoM.Translate(screenCenterX, screenCenterY)
 	pauseTextOp.PrimaryAlign = text.AlignCenter
 	pauseTextOp.SecondaryAlign = text.AlignCenter
-	pauseTextOp.ColorScale.ScaleWithColor(color.White)
+	pauseTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
 	text.Draw(screen, pauseText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, pauseTextOp)
+}
+
+// draws the level cleared message
+func (g *Game) drawLevelCleared(screen *ebiten.Image) {
+	// probably would be better to set most of this up in constructor, since it's mostly static.
+	// good enough here for now
+
+	screenCenterX := float64(screen.Bounds().Dx() / 2)
+	screenCenterY := float64(screen.Bounds().Dy() / 2)
+	textBoxWidthPx := 400.0
+	textBoxHeightPx := 150.0
+
+	vector.FillRect(screen,
+		float32(screenCenterX-textBoxWidthPx/2),
+		float32(screenCenterY-textBoxHeightPx/2),
+		float32(textBoxWidthPx),
+		float32(textBoxHeightPx),
+		ColorLightBorder,
+		true)
+	vector.StrokeRect(screen,
+		float32(screenCenterX-textBoxWidthPx/2),
+		float32(screenCenterY-textBoxHeightPx/2),
+		float32(textBoxWidthPx),
+		float32(textBoxHeightPx),
+		float32(4.0),
+		ColorBorder,
+		true)
+
+	menuText := "LEVEL CLEARED!"
+	textOp := &text.DrawOptions{}
+	textOp.GeoM.Translate(screenCenterX, screenCenterY)
+	textOp.PrimaryAlign = text.AlignCenter
+	textOp.SecondaryAlign = text.AlignCenter
+	textOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, menuText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, textOp)
+}
+
+// draws the game over message
+func (g *Game) drawGameOver(screen *ebiten.Image) {
+	// probably would be better to set most of this up in constructor, since it's mostly static.
+	// good enough here for now
+
+	screenCenterX := float64(screen.Bounds().Dx() / 2)
+	screenCenterY := float64(screen.Bounds().Dy() / 2)
+	textBoxWidthPx := 400.0
+	textBoxHeightPx := 400.0
+
+	vector.FillRect(screen,
+		float32(screenCenterX-textBoxWidthPx/2),
+		float32(screenCenterY-textBoxHeightPx/2),
+		float32(textBoxWidthPx),
+		float32(textBoxHeightPx),
+		ColorLightBorder,
+		true)
+	vector.StrokeRect(screen,
+		float32(screenCenterX-textBoxWidthPx/2),
+		float32(screenCenterY-textBoxHeightPx/2),
+		float32(textBoxWidthPx),
+		float32(textBoxHeightPx),
+		float32(4.0),
+		ColorBorder,
+		true)
+
+	menuText := "GAME OVER"
+	textOp := &text.DrawOptions{}
+	textOp.GeoM.Translate(screenCenterX, screenCenterY)
+	textOp.PrimaryAlign = text.AlignCenter
+	textOp.SecondaryAlign = text.AlignCenter
+	textOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, menuText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, textOp)
+
+	currScoreText := fmt.Sprintf("Score: %d", g.info.CalculateScore())
+	currScoreTextOp := &text.DrawOptions{}
+	currScoreTextOp.GeoM.Translate(screenCenterX, screenCenterY+50)
+	currScoreTextOp.PrimaryAlign = text.AlignCenter
+	currScoreTextOp.SecondaryAlign = text.AlignCenter
+	currScoreTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, currScoreText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, currScoreTextOp)
+
+	highScoreTextOp := &text.DrawOptions{}
+	highScoreTextOp.GeoM.Translate(screenCenterX, screenCenterY+100)
+	highScoreTextOp.PrimaryAlign = text.AlignCenter
+	highScoreTextOp.SecondaryAlign = text.AlignCenter
+	highScoreTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, g.highScoreText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, highScoreTextOp)
+}
+
+// draws the victory message
+func (g *Game) drawVictory(screen *ebiten.Image) {
+	// probably would be better to set most of this up in constructor, since it's mostly static.
+	// good enough here for now
+
+	screenCenterX := float64(screen.Bounds().Dx() / 2)
+	screenCenterY := float64(screen.Bounds().Dy() / 2)
+	textBoxWidthPx := 400.0
+	textBoxHeightPx := 400.0
+
+	vector.FillRect(screen,
+		float32(screenCenterX-textBoxWidthPx/2),
+		float32(screenCenterY-textBoxHeightPx/2),
+		float32(textBoxWidthPx),
+		float32(textBoxHeightPx),
+		ColorLightBorder,
+		true)
+	vector.StrokeRect(screen,
+		float32(screenCenterX-textBoxWidthPx/2),
+		float32(screenCenterY-textBoxHeightPx/2),
+		float32(textBoxWidthPx),
+		float32(textBoxHeightPx),
+		float32(4.0),
+		ColorBorder,
+		true)
+
+	menuText := "VICTORY!"
+	textOp := &text.DrawOptions{}
+	textOp.GeoM.Translate(screenCenterX, screenCenterY)
+	textOp.PrimaryAlign = text.AlignCenter
+	textOp.SecondaryAlign = text.AlignCenter
+	textOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, menuText, &text.GoTextFace{Source: assets.MainFont, Size: 48}, textOp)
+
+	clearText := "All levels cleared"
+	clearTextOp := &text.DrawOptions{}
+	clearTextOp.GeoM.Translate(screenCenterX, screenCenterY+50)
+	clearTextOp.PrimaryAlign = text.AlignCenter
+	clearTextOp.SecondaryAlign = text.AlignCenter
+	clearTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, clearText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, clearTextOp)
+
+	currScoreText := fmt.Sprintf("Score: %d", g.info.CalculateScore())
+	currScoreTextOp := &text.DrawOptions{}
+	currScoreTextOp.GeoM.Translate(screenCenterX, screenCenterY+100)
+	currScoreTextOp.PrimaryAlign = text.AlignCenter
+	currScoreTextOp.SecondaryAlign = text.AlignCenter
+	currScoreTextOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, currScoreText, &text.GoTextFace{Source: assets.MainFont, Size: 24}, currScoreTextOp)
 }

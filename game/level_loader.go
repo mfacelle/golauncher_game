@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"fmt"
 	"golauncher_game/assets"
 	"image/color"
 	"log"
@@ -20,10 +21,22 @@ type levelObjectJSON struct {
 	BorderColor   color.RGBA `json:"borderColor"`
 	BorderWidthPx float64    `json:"borderWidthPx"`
 	Charge        float64    `json:"charge"`
+	Sprite        string     `json:"sprite"`
+}
+
+func CountTotalNumLevels(filenamePattern string) int {
+	matches, err := filepath.Glob(filenamePattern)
+	if err != nil {
+		fmt.Println("Error parsing level filename pattern \"", filenamePattern, "\": ", err)
+		return 0
+	}
+
+	numFiles := len(matches)
+	return numFiles
 }
 
 // load all objects from JSON file.
-// Using JSON so it's easy to edit (at least until I make some kind of level editor app)
+// Using JSON so it's easy to edit
 // would XML have been better for this?
 func loadLevelFromJSON(path string, info *PlayerInfo) *Level {
 	file, err := os.ReadFile(filepath.Clean(path))
@@ -47,6 +60,11 @@ func loadLevelFromJSON(path string, info *PlayerInfo) *Level {
 	objects := make([]ChargedObject, 0, len(objectData))
 	obstacles := make([]Obstacle, 0, len(objectData))
 	for _, data := range objectData {
+		// modify all positions to account for UI bar.
+		// definitely better ways to have accomplished this, but it'll do for now
+		data.PositionPx.Y += UiBarHeightPx
+
+		// check type of data being read and create an object for it
 		switch data.Type {
 		case "obstacle":
 			obstacles = append(obstacles, Obstacle{
@@ -58,9 +76,19 @@ func loadLevelFromJSON(path string, info *PlayerInfo) *Level {
 				borderWidthPx: data.BorderWidthPx,
 			})
 		case "chargedObject":
+			// load sprite
 			sprite := assets.SheepRedSprite
-			if data.Charge < 0 {
+			switch data.Sprite {
+			case "sheep_blue":
 				sprite = assets.SheepBlueSprite
+			case "sheep_darkred":
+				sprite = assets.SheepDarkRedSprite
+			case "sheep_darkblue":
+				sprite = assets.SheepDarkBlueSprite
+			case "sheep_white":
+				sprite = assets.SheepWhiteSprite
+			case "sheep_red":
+			default: // already initialized to red sheep sprite
 			}
 			objects = append(objects, ChargedObject{
 				positionPx:    data.PositionPx,
@@ -72,6 +100,7 @@ func loadLevelFromJSON(path string, info *PlayerInfo) *Level {
 				sprite:        sprite,
 			})
 		case "goal":
+			// always use white sheep for goal sprite (for now)
 			goal = &GoalObject{
 				ChargedObject: ChargedObject{
 					positionPx:    data.PositionPx,
@@ -80,7 +109,7 @@ func loadLevelFromJSON(path string, info *PlayerInfo) *Level {
 					charge:        data.Charge,
 					borderColor:   data.BorderColor,
 					borderWidthPx: data.BorderWidthPx,
-					sprite:        assets.SheepGoalSprite,
+					sprite:        assets.SheepWhiteSprite,
 				},
 			}
 			// add just ChargedObject portion of goal to objects list

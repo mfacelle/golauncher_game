@@ -1,122 +1,153 @@
 [
-    {
-      "type": "levelInfo",
-      "name": "Level 10",
-      "color": {
-        "R": 10,
-        "G": 10,
-        "B": 10,
-        "A": 255
-      }
-    },
-    { 
-      "type": "player",
-      "positionPx": {"X": 400, "Y": 650}
-    },
-    {
-      "type": "playerZone",
-      "positionPx": {"X": 300, "Y": 600},
-      "widthPx": 200,
-      "heightPx": 150,
-      "color": {"R": 20, "G": 20, "B": 40, "A": 255},
-      "borderColor": {"R": 120, "G": 120, "B": 140, "A": 255},
-      "borderWidthPx": 2
-    },
-    {
-      "type": "goal",
-      "positionPx": {"X": 400, "Y": 50},
-      "radius": 30,
-      "color": {"R": 255, "G": 100, "B": 100, "A": 255},
-      "borderColor": {"R": 200, "G": 200, "B": 200, "A": 255},
-      "borderWidthPx": 4,
-      "charge": 1000
-    },
-    {
-      "type": "chargedObject",
-      "positionPx": {
-        "X": 450,
-        "Y": 500
-      },
-      "radius": 20,
-      "color": {
-        "R": 255,
-        "G": 50,
-        "B": 50,
-        "A": 255
-      },
-      "borderColor": {
-        "R": 200,
-        "G": 10,
-        "B": 10,
-        "A": 255
-      },
-      "borderWidthPx": 3,
-      "charge": 5000
-    },
-    {
-      "type": "chargedObject",
-      "positionPx": {
-        "X": 350,
-        "Y": 250
-      },
-      "radius": 20,
-      "color": {
-        "R": 255,
-        "G": 50,
-        "B": 50,
-        "A": 255
-      },
-      "borderColor": {
-        "R": 200,
-        "G": 10,
-        "B": 10,
-        "A": 255
-      },
-      "borderWidthPx": 3,
-      "charge": 5000
-    },
-    {
-      "type": "obstacle",
-      "positionPx": {
-        "X": 400,
-        "Y": 240
-      },
-      "widthPx": 400,
-      "heightPx": 20,
-      "color": {
-        "R": 120,
-        "G": 120,
-        "B": 120,
-        "A": 255
-      },
-      "borderColor": {
-        "R": 200,
-        "G": 200,
-        "B": 200,
-        "A": 255
-      },
-      "borderWidthPx": 2
-    },
-    {
-      "type": "obstacle",
-      "positionPx": {
-        "X": 0,
-        "Y": 490
-      },
-      "widthPx": 400,
-      "heightPx": 20,
-      "color": {
-        "R": 120,
-        "G": 120,
-        "B": 120,
-        "A": 255
-      },
-      "borderColor": {
-        "R": 200,
-        "G": 200,
-        "B": 200,
-        "A": 255
-      },
-      "borderWidthPx": 2
+  {
+    "type": "levelInfo",
+    "name": "Level 10",
+    "color": {
+      "R": 53,
+      "G": 128,
+      "B": 52,
+      "A": 255
     }
-  ]
+  },
+  {
+    "type": "player",
+    "positionPx": {
+      "X": 400,
+      "Y": 650
+    }
+  },
+  {
+    "type": "playerZone",
+    "positionPx": {
+      "X": 300,
+      "Y": 600
+    },
+    "widthPx": 200,
+    "heightPx": 150,
+    "color": {
+      "R": 90,
+      "G": 81,
+      "B": 63,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 77,
+      "G": 77,
+      "B": 69,
+      "A": 255
+    },
+    "borderWidthPx": 2
+  },
+  {
+    "type": "goal",
+    "positionPx": {
+      "X": 400,
+      "Y": 50
+    },
+    "radius": 30,
+    "color": {
+      "R": 255,
+      "G": 100,
+      "B": 100,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 200,
+      "B": 200,
+      "A": 255
+    },
+    "borderWidthPx": 4,
+    "charge": 1000
+  },
+  {
+    "type": "chargedObject",
+    "positionPx": {
+      "X": 450,
+      "Y": 500
+    },
+    "radius": 20,
+    "color": {
+      "R": 255,
+      "G": 50,
+      "B": 50,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 10,
+      "B": 10,
+      "A": 255
+    },
+    "borderWidthPx": 3,
+    "charge": 5000,
+    "sprite": "sheep_darkred"
+  },
+  {
+    "type": "chargedObject",
+    "positionPx": {
+      "X": 350,
+      "Y": 250
+    },
+    "radius": 20,
+    "color": {
+      "R": 255,
+      "G": 50,
+      "B": 50,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 10,
+      "B": 10,
+      "A": 255
+    },
+    "borderWidthPx": 3,
+    "charge": 5000,
+    "sprite": "sheep_darkred"
+  },
+  {
+    "type": "obstacle",
+    "positionPx": {
+      "X": 400,
+      "Y": 240
+    },
+    "widthPx": 400,
+    "heightPx": 20,
+    "color": {
+      "R": 120,
+      "G": 120,
+      "B": 120,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 200,
+      "B": 200,
+      "A": 255
+    },
+    "borderWidthPx": 2
+  },
+  {
+    "type": "obstacle",
+    "positionPx": {
+      "X": 0,
+      "Y": 490
+    },
+    "widthPx": 400,
+    "heightPx": 20,
+    "color": {
+      "R": 120,
+      "G": 120,
+      "B": 120,
+      "A": 255
+    },
+    "borderColor": {
+      "R": 200,
+      "G": 200,
+      "B": 200,
+      "A": 255
+    },
+    "borderWidthPx": 2
+  }
+]
