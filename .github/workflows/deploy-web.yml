@@ -1,5 +1,5 @@
-# file from https://github.com/ThreeDotsLabs/meteors/blob/master/.github/workflows/deploy-web.yml
-# modified, to account for differences with my game
+# originally copied from https://github.com/ThreeDotsLabs/meteors/blob/master/.github/workflows/deploy-web.yml
+# modified heavily due to deprecated stuff, and to account for differences with my game
 
 name: Deploy Web
 on:
@@ -17,16 +17,26 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          go-version: '^1.21'
-      - run: go build -o web/game.wasm
+          go-version: 'stable'
+          
+      - name: Build WebAssembly
         env:
           GOOS: js
           GOARCH: wasm
-      - run: cp $(go env GOROOT)/misc/wasm/wasm_exec.js web/
-      - run: cp -r levels web/
+        run: |
+          GOOS=js GOARCH=wasm go build -o ./public/main.wasm .
+
+      - name: Get latest wasm_exec.js
+        run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
+
+      - name: Copy game files
+        run: cp -r levels web/
 
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
