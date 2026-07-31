@@ -35,13 +35,13 @@ jobs:
       - name: Get latest wasm_exec.js
         run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" web/
 
-      - name: Copy game files
+      - name: Copy game files and upload
         run: cp -r levels web/
-
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+        uses: actions/checkout@v4
+        uses: actions/configure-pages@v5
+        uses: actions/upload-pages-artifact@v3
         with:
           path: web
+
       - id: deployment
         uses: actions/deploy-pages@v4
