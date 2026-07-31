@@ -62,7 +62,7 @@ func NewGame() *Game {
 			NumParticles:  InitParticleCount,
 			LevelsCleared: InitScore,
 		},
-		totalNumLevels:    CountTotalNumLevels("levels/level*.json"),
+		totalNumLevels:    GetTotalNumLevels(),
 		durationTickCount: 0,
 	}
 

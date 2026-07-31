@@ -1,14 +1,16 @@
 package game
 
 import (
+	"embed"
 	"encoding/json"
-	"fmt"
 	"golauncher_game/assets"
 	"image/color"
+	"io/fs"
 	"log"
-	"os"
-	"path/filepath"
 )
+
+//go:embed levels/*.json
+var levelFiles embed.FS
 
 type levelObjectJSON struct {
 	Type          string     `json:"type"`
@@ -24,14 +26,21 @@ type levelObjectJSON struct {
 	Sprite        string     `json:"sprite"`
 }
 
-func CountTotalNumLevels(filenamePattern string) int {
-	matches, err := filepath.Glob(filenamePattern)
-	if err != nil {
-		fmt.Println("Error parsing level filename pattern \"", filenamePattern, "\": ", err)
-		return 0
+func GetTotalNumLevels() int {
+	numFiles := 0
+	if err := fs.WalkDir(levelFiles, ".", func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+
+		numFiles++
+
+		return nil
+	}); err != nil {
+		log.Println("Encountered error counting number of level files: ", err)
+		numFiles = 0
 	}
 
-	numFiles := len(matches)
 	return numFiles
 }
 
@@ -39,7 +48,7 @@ func CountTotalNumLevels(filenamePattern string) int {
 // Using JSON so it's easy to edit
 // would XML have been better for this?
 func loadLevelFromJSON(path string, info *PlayerInfo) *Level {
-	file, err := os.ReadFile(filepath.Clean(path))
+	file, err := levelFiles.ReadFile(path)
 	if err != nil {
 		log.Printf("failed to read level file %s: %v", path, err)
 		return nil
