@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
-	"golauncher_game/assets"
+	"staticsheep/assets"
 )
 
 type gameState int

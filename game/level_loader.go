@@ -3,10 +3,10 @@ package game
 import (
 	"embed"
 	"encoding/json"
-	"golauncher_game/assets"
 	"image/color"
 	"io/fs"
 	"log"
+	"staticsheep/assets"
 )
 
 //go:embed levels/*.json

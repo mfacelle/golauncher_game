@@ -2,9 +2,9 @@ package game
 
 import (
 	"fmt"
-	"golauncher_game/assets"
 	"image/color"
 	"log"
+	"staticsheep/assets"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"

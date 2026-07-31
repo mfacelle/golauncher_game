@@ -1,8 +1,8 @@
 package game
 
 import (
-	"golauncher_game/assets"
 	"math"
+	"staticsheep/assets"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

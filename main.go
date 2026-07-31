@@ -5,7 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"golauncher_game/game"
+	"staticsheep/game"
 )
 
 func main() {

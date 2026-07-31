@@ -1,4 +1,4 @@
-# golauncher_game
+# staticsheep
 Static Sheep: simple game made using Go, primarily made as a way to learn the language.
 
 Move character around and launch particles, like electrons, around various charged objects to hit a goal
