@@ -155,4 +155,14 @@ func (level *Level) Draw(screen *ebiten.Image) {
 	labelOp.SecondaryAlign = text.AlignEnd
 	labelOp.ColorScale.ScaleWithColor(ColorOffWhite)
 	text.Draw(screen, particleCountLabel, labelFont, labelOp)
+
+	levelText := level.name
+	levelFont := &text.GoTextFace{Source: assets.MainFont, Size: 48}
+	levelOp := &text.DrawOptions{}
+	// align to bottom of UI bar, right of screen
+	levelOp.GeoM.Translate(WindowWidth, UiBarHeightPx)
+	levelOp.PrimaryAlign = text.AlignEnd
+	levelOp.SecondaryAlign = text.AlignEnd
+	levelOp.ColorScale.ScaleWithColor(ColorOffWhite)
+	text.Draw(screen, levelText, levelFont, levelOp)
 }

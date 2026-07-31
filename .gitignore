@@ -9,7 +9,7 @@
 *.dylib
 
 # executable binary and other files
-golauncher_game
+staticsheep
 .DS_Store
 
 # Test binary, built with `go test -c`

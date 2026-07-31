@@ -1,4 +1,4 @@
-module golauncher_game
+module staticsheep
 
 go 1.25.0
 
